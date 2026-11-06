@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website to APK Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --input-bg: #111827;
+      --input-border: rgba(255, 255, 255, 0.12);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1e293b, var(--bg) 80%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"], input[type="url"], input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+
+    .icon-upload-area {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      border: 2px dashed var(--input-border);
+      border-radius: 10px;
+      cursor: pointer;
+      background: rgba(17, 24, 39, 0.6);
+      transition: all 0.2s ease;
+    }
+    .icon-upload-area:hover {
+      border-color: var(--primary);
+      background: rgba(59, 130, 246, 0.05);
+    }
+    .icon-preview {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+    .icon-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .upload-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .upload-text strong {
+      color: #e2e8f0;
+    }
+
+    .advanced-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 16px;
+      padding: 4px 0;
+    }
+    .advanced-toggle:hover {
+      color: #fff;
+    }
+    .advanced-fields {
+      display: none;
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+      margin-bottom: 20px;
+    }
+    .advanced-fields.open {
+      display: block;
+    }
+    .row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-submit:hover:not(:disabled) {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Progress & Results */
+    .status-card {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-queued { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-processing { background: rgba(59, 130, 246, 0.15); color: var(--primary); border: 1px solid var(--primary); }
+    .badge-completed { background: rgba(16, 185, 129, 0.15); color: var(--accent); border: 1px solid var(--accent); }
+    .badge-failed { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid var(--danger); }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .step-text {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .meta-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+
+    .download-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-download {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-download:hover {
+      background: #283548;
+      border-color: var(--primary);
+    }
+    .btn-bundle {
+      background: linear-gradient(135deg, #1e3a8a, #1d4ed8);
+      border: 1px solid #3b82f6;
+    }
+    .btn-bundle:hover {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+
+    .alert {
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .alert-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+    }
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid var(--warning);
+      color: #fcd34d;
+    }
+
+    .keystore-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 4px solid var(--warning);
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #fbbf24;
+      line-height: 1.5;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <h1>Website to Android Builder</h1>
+      <p>Convert any web application into a signed Release APK & AAB</p>
+    </div>
+
+    <!-- Error Alert Box -->
+    <div id="errorAlert" class="alert alert-danger"></div>
+
+    <!-- Generator Card -->
+    <div class="card" id="formCard">
+      <form id="buildForm">
+        <div class="form-group">
+          <label>Website URL</label>
+          <input type="url" id="websiteUrl" placeholder="https://my-store.com" required>
+        </div>
+
+        <div class="form-group">
+          <label>App Name</label>
+          <input type="text" id="appName" placeholder="My Store" required>
+        </div>
+
+        <div class="form-group">
+          <label>App Icon (1:1 Square PNG/JPG)</label>
+          <input type="file" id="iconInput" accept="image/png,image/jpeg,image/webp" style="display:none;" required>
+          <div class="icon-upload-area" id="dropArea" onclick="document.getElementById('iconInput').click()">
+            <div class="icon-preview" id="iconPreview">
+              <span style="font-size: 24px; color: #64748b;">🎨</span>
+            </div>
+            <div class="upload-text">
+              <strong id="uploadLabel">Click or drop 1:1 icon here</strong><br>
+              <span id="iconDimensions">Square ratio required, min 192x192px</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Advanced Options -->
+        <button type="button" class="advanced-toggle" id="advancedToggle">
+          ⚙️ Advanced Settings <span id="toggleArrow">▼</span>
+        </button>
+
+        <div class="advanced-fields" id="advancedFields">
+          <div class="form-group">
+            <label>Package Name (Override)</label>
+            <input type="text" id="packageName" placeholder="com.mystore.app">
+          </div>
+          <div class="row-2">
+            <div class="form-group">
+              <label>Version Code</label>
+              <input type="number" id="versionCode" value="1" min="1">
+            </div>
+            <div class="form-group">
+              <label>Version Name</label>
+              <input type="text" id="versionName" value="1.0.0">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span>Generate Release APK & AAB</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Build Status & Download Card -->
+    <div class="card status-card" id="statusCard">
+      <div class="status-header">
+        <h3 id="statusTitle">Building Application...</h3>
+        <span class="status-badge" id="statusBadge">Queued</span>
+      </div>
+
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+
+      <div class="step-text" id="stepText">Waiting in queue...</div>
+
+      <div class="meta-box" id="metaBox" style="display: none;"></div>
+
+      <div class="download-group" id="downloadGroup" style="display: none;">
+        <a id="btnApk" class="btn-download" target="_blank">
+          <span>📦 Download Release APK</span>
+          <span style="font-size:0.75rem; color:#94a3b8;">Direct Install</span>
+        </a>
+        <a id="btnAab" class="btn-download" target="_blank">
+          <span>🚀 Download Release AAB</span>
+          <span style="font-size:0.75rem; color:#94a3b8;">Google Play Store</span>
+        </a>
+        <a id="btnBundle" class="btn-download btn-bundle" target="_blank">
+          <span>🗂️ Download Complete Bundle (ZIP)</span>
+          <span style="font-size:0.75rem; color:#dbeafe;">APK + AAB + Keystore</span>
+        </a>
+      </div>
+
+      <div class="keystore-warning" id="keystoreWarning" style="display: none;">
+        ⚠️ <strong>CRITICAL BACKUP NOTICE:</strong><br>
+        Your bundle contains a newly generated cryptographic signing keystore (<code>keystore.jks</code>).
+        If you lose this keystore file and its passwords, you will <strong>never</strong> be able to update your app on the Play Store or users' phones.
+        Back it up securely now.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin.includes("localhost") || window.location.origin.includes("127.0.0.1") 
+      ? window.location.origin 
+      : (window.API_BASE_URL || window.location.origin);
+
+    const form = document.getElementById("buildForm");
+    const websiteUrlInput = document.getElementById("websiteUrl");
+    const appNameInput = document.getElementById("appName");
+    const packageNameInput = document.getElementById("packageName");
+    const iconInput = document.getElementById("iconInput");
+    const iconPreview = document.getElementById("iconPreview");
+    const uploadLabel = document.getElementById("uploadLabel");
+    const iconDimensions = document.getElementById("iconDimensions");
+    const advancedToggle = document.getElementById("advancedToggle");
+    const advancedFields = document.getElementById("advancedFields");
+    const toggleArrow = document.getElementById("toggleArrow");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusCard = document.getElementById("statusCard");
+    const statusTitle = document.getElementById("statusTitle");
+    const statusBadge = document.getElementById("statusBadge");
+    const progressBar = document.getElementById("progressBar");
+    const stepText = document.getElementById("stepText");
+    const metaBox = document.getElementById("metaBox");
+    const downloadGroup = document.getElementById("downloadGroup");
+    const keystoreWarning = document.getElementById("keystoreWarning");
+    const errorAlert = document.getElementById("errorAlert");
+
+    let isPackageOverridden = false;
+    let pollInterval = null;
+
+    // Toggle advanced options
+    advancedToggle.addEventListener("click", () => {
+      const isOpen = advancedFields.classList.toggle("open");
+      toggleArrow.textContent = isOpen ? "▲" : "▼";
+    });
+
+    packageNameInput.addEventListener("input", () => {
+      isPackageOverridden = packageNameInput.value.trim().length > 0;
+    });
+
+    // Auto-generate package name live from website URL
+    websiteUrlInput.addEventListener("input", () => {
+      if (isPackageOverridden) return;
+      try {
+        const val = websiteUrlInput.value.trim();
+        if (!val) return;
+        const url = new URL(val.startsWith("http") ? val : "https://" + val);
+        let host = url.hostname.toLowerCase();
+        if (host.startsWith("www.")) host = host.substring(4);
+        const parts = host.split(".").filter(Boolean).reverse();
+        if (parts.length > 0) {
+          const cleanParts = parts.map(p => p.replace(/[^a-z0-9_]/g, "")).filter(Boolean);
+          if (cleanParts[cleanParts.length - 1] !== "app") {
+            cleanParts.push("app");
+          }
+          packageNameInput.value = cleanParts.join(".");
+        }
+      } catch (e) {
+        // Invalid URL typed so far, keep waiting
+      }
+    });
+
+    // Icon Preview and 1:1 validation
+    iconInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const diff = Math.abs(img.width - img.height);
+        const maxDim = Math.max(img.width, img.height);
+        if (diff / maxDim > 0.05) {
+          showError(`Selected icon is not 1:1 square (${img.width}x${img.height}px). Please select a square image.`);
+          iconInput.value = "";
+          iconPreview.innerHTML = `<span style="font-size:24px; color:#ef4444;">❌</span>`;
+          return;
+        }
+        hideError();
+        iconPreview.innerHTML = `<img src="${objectUrl}">`;
+        uploadLabel.textContent = file.name;
+        iconDimensions.textContent = `${img.width}x${img.height}px (Square Verified)`;
+      };
+      img.src = objectUrl;
+    });
+
+    function showError(msg) {
+      errorAlert.textContent = msg;
+      errorAlert.style.display = "block";
+    }
+    function hideError() {
+      errorAlert.style.display = "none";
+    }
+
+    // Form submission
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const file = iconInput.files[0];
+      if (!file) {
+        showError("Please select a 1:1 square app icon.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Submitting build...</span>`;
+
+      const formData = new FormData();
+      formData.append("website_url", websiteUrlInput.value.trim());
+      formData.append("app_name", appNameInput.value.trim());
+      formData.append("icon", file);
+
+      const pkg = packageNameInput.value.trim();
+      if (pkg) formData.append("package_name", pkg);
+      formData.append("version_code", document.getElementById("versionCode").value);
+      formData.append("version_name", document.getElementById("versionName").value.trim());
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/builds`, {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 429) {
+            const retryAfter = res.headers.get("Retry-After") || "a few";
+            showError(`Rate limit reached: ${data.detail || "Please wait before submitting again."} (Retry after ${retryAfter}s)`);
+          } else {
+            showError(data.detail || "Build request rejected.");
+          }
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>Generate Release APK & AAB</span>`;
+          return;
+        }
+
+        // Show status card and start polling
+        statusCard.style.display = "block";
+        statusCard.scrollIntoView({ behavior: "smooth" });
+        startPolling(data.id);
+
+      } catch (err) {
+        showError(`Network connection error: ${err.message}`);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Generate Release APK & AAB</span>`;
+      }
+    });
+
+    function startPolling(buildId) {
+      if (pollInterval) clearInterval(pollInterval);
+
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/builds/${buildId}`);
+          if (!res.ok) {
+            if (res.status === 429) return; // Ignore temporary rate limit on polling
+            clearInterval(pollInterval);
+            showError("Unable to fetch build status.");
+            return;
+          }
+
+          const data = await res.json();
+          updateStatusUI(data);
+
+          if (data.status === "completed" || data.status === "failed" || data.status === "expired") {
+            clearInterval(pollInterval);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Generate Another App</span>`;
+          }
+        } catch (e) {
+          console.warn("Polling error:", e);
+        }
+      }, 1000);
+    }
+
+    function updateStatusUI(data) {
+      statusBadge.className = `status-badge badge-${data.status}`;
+      statusBadge.textContent = data.status.toUpperCase();
+
+      if (data.status === "queued") {
+        statusTitle.textContent = "Waiting in Build Queue...";
+        progressBar.style.width = "10%";
+        stepText.textContent = `Queue position: #${data.queue_position} | Est. wait: ~${data.estimated_wait_seconds}s`;
+      } else if (data.status === "processing") {
+        statusTitle.textContent = "Compiling Android App...";
+        progressBar.style.width = `${Math.max(15, data.progress)}%`;
+        stepText.textContent = `Current step: ${data.step} (${data.progress}%)`;
+      } else if (data.status === "completed") {
+        statusTitle.textContent = "Build Complete! 🎉";
+        progressBar.style.width = "100%";
+        stepText.textContent = "APK and AAB are signed and ready for download.";
+
+        // Populate downloads
+        document.getElementById("btnApk").href = `${API_BASE}/api/v1/builds/${data.id}/download/apk`;
+        document.getElementById("btnAab").href = `${API_BASE}/api/v1/builds/${data.id}/download/aab`;
+        document.getElementById("btnBundle").href = `${API_BASE}/api/v1/builds/${data.id}/download/bundle`;
+
+        downloadGroup.style.display = "flex";
+        keystoreWarning.style.display = "block";
+
+        if (data.metadata) {
+          metaBox.style.display = "block";
+          metaBox.innerHTML = `
+            <strong>Package:</strong> ${data.package_name}<br>
+            <strong>Version:</strong> ${data.version_name} (Code: ${data.version_code})<br>
+            <strong>SHA-256 Fingerprint:</strong><br>${data.metadata.sha256 || 'Verified'}
+          `;
+        }
+      } else if (data.status === "failed") {
+        statusTitle.textContent = "Build Failed";
+        progressBar.style.width = "100%";
+        progressBar.style.background = "var(--danger)";
+        stepText.textContent = data.error || "An error occurred during build.";
+        showError(`Build error: ${data.error}`);
+      }
+    }
+  </script>
+</body>
+</html>

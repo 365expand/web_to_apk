@@ -1,0 +1,11 @@
+# Domain Blocklist for Brand Abuse & Phishing Protection
+paypal-login.com
+apple-security-check.com
+google-verify.com
+bankofamerica-secure.com
+chase-banking-online.com
+wellsfargo-verify.com
+netflix-billing-update.com
+accounts-security-login.com
+malware.example.com
+phishing.example.com

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/backend/data/webtoapk.db
+      - ANDROID_HOME=/opt/android-sdk
+      - MAX_CONCURRENT_BUILDS=2
+      - APK_RETENTION_HOURS=24
+      - RATE_LIMIT_BUILDS_PER_HOUR=10
+      - TRUST_PROXY=true
+    volumes:
+      - app-data:/app/backend/data
+      - app-storage:/app/backend/storage_data
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m app.worker
+    environment:
+      - DATABASE_URL=sqlite:////app/backend/data/webtoapk.db
+      - ANDROID_HOME=/opt/android-sdk
+      - MAX_CONCURRENT_BUILDS=2
+      - APK_RETENTION_HOURS=24
+      - TRUST_PROXY=true
+    volumes:
+      - app-data:/app/backend/data
+      - app-storage:/app/backend/storage_data
+    restart: unless-stopped
+    depends_on:
+      - api
+
+volumes:
+  app-data:
+  app-storage:

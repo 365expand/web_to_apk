@@ -1,0 +1,86 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+def propAppName = project.findProperty("appName") ?: "WebToAPK"
+def propAppUrl = project.findProperty("appUrl") ?: "https://example.com"
+def propAppId = project.findProperty("applicationId") ?: "com.webtoapk.webview"
+def propVersionCode = (project.findProperty("versionCode") ?: "1") as Integer
+def propVersionName = project.findProperty("versionName") ?: "1.0.0"
+
+def releaseKeyStorePath = project.findProperty("releaseKeyStore")
+def releaseKeyAlias = project.findProperty("releaseKeyAlias")
+def releaseStorePassword = project.findProperty("releaseStorePassword")
+def releaseKeyPassword = project.findProperty("releaseKeyPassword")
+
+def escapedUrl = propAppUrl.toString().replace('\\', '\\\\').replace('"', '\\"')
+def escapedName = propAppName.toString().replace('\\', '\\\\').replace('"', '\\"')
+def cleartextAllowed = propAppUrl.toString().toLowerCase().startsWith("http://")
+
+android {
+    namespace "com.webtoapk.webview"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId propAppId
+        minSdk 24
+        targetSdk 34
+        versionCode propVersionCode
+        versionName propVersionName
+
+        manifestPlaceholders = [
+            appName: propAppName,
+            usesCleartextTraffic: cleartextAllowed ? "true" : "false"
+        ]
+
+        buildConfigField "String", "APP_URL", "\"${escapedUrl}\""
+        buildConfigField "String", "APP_NAME", "\"${escapedName}\""
+    }
+
+    signingConfigs {
+        release {
+            if (releaseKeyStorePath) {
+                storeFile file(releaseKeyStorePath)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (releaseKeyStorePath) {
+                signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            if (releaseKeyStorePath) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
+}
