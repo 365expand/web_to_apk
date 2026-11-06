@@ -70,6 +70,31 @@ def generate_package_name(url: str) -> str:
     return pkg[:150]
 
 
+def sanitize_package_name_override(package_name: str) -> str:
+    """
+    Sanitizes user-provided or auto-filled package name:
+    - Lowercases
+    - Strips non-alphanumeric/underscore characters
+    - Automatically prefixes 'p' if a segment starts with a digit (e.g. 365expand -> p365expand)
+    - Automatically prefixes 'pkg_' if a segment is a Java/Kotlin keyword
+    """
+    if not package_name:
+        return ""
+    clean = package_name.strip().lower()
+    segments = clean.split(".")
+    sanitized = []
+    for seg in segments:
+      clean_seg = re.sub(r"[^a-z0-9_]", "", seg)
+      if not clean_seg:
+        continue
+      if clean_seg[0].isdigit():
+        clean_seg = f"p{clean_seg}"
+      if clean_seg in JAVA_KEYWORDS:
+        clean_seg = f"pkg_{clean_seg}"
+      sanitized.append(clean_seg)
+    return ".".join(sanitized)[:150]
+
+
 def validate_package_name(package_name: str) -> Tuple[bool, Optional[str]]:
     """
     Validates Android package name according to Android specification:

@@ -13,6 +13,7 @@ from app.core.logging import logger
 from app.modules.apk_builder.interface import BuildEngine, BuildRequest, BuildResult
 from app.modules.apk_builder.validators import (
     generate_package_name,
+    sanitize_package_name_override,
     validate_package_name,
     validate_version_code,
     validate_version_name,
@@ -57,6 +58,8 @@ class WebViewEngine(BuildEngine):
             pkg_name = request.package_name
             if not pkg_name:
                 pkg_name = generate_package_name(request.website_url)
+            else:
+                pkg_name = sanitize_package_name_override(pkg_name)
             
             is_valid, err_msg = validate_package_name(pkg_name)
             if not is_valid:

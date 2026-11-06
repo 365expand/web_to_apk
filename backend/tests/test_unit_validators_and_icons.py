@@ -5,6 +5,7 @@ from PIL import Image
 
 from app.modules.apk_builder.validators import (
     generate_package_name,
+    sanitize_package_name_override,
     validate_package_name,
     validate_version_code,
     validate_version_name,
@@ -21,8 +22,18 @@ def test_package_name_generator():
     assert generate_package_name("https://sub.store.example.org/path") == "org.example.store.sub.app"
     # Starting with digit
     assert generate_package_name("https://360view.com") == "com.p360view.app"
+    assert generate_package_name("https://365expand.com") == "com.p365expand.app"
     # Reserved Java keyword
     assert generate_package_name("https://int.com") == "com.pkg_int.app"
+
+
+def test_sanitize_package_name_override():
+    # User entered domain starting with digits
+    assert sanitize_package_name_override("com.365expand.app") == "com.p365expand.app"
+    # User entered keyword segment
+    assert sanitize_package_name_override("com.class.app") == "com.pkg_class.app"
+    # Valid untouched
+    assert sanitize_package_name_override("com.myshop.app") == "com.myshop.app"
 
 
 def test_package_name_validator():

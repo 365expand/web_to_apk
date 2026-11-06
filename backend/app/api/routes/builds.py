@@ -22,6 +22,7 @@ from app.core.ratelimit import enforce_build_rate_limit, enforce_lightweight_rat
 from app.core.security import SecurityValidationError, validate_and_clean_url
 from app.modules.apk_builder.validators import (
     generate_package_name,
+    sanitize_package_name_override,
     validate_package_name,
     validate_version_code,
     validate_version_name,
@@ -70,7 +71,7 @@ async def create_build(
 
     # 4. Package name validation / generation
     if package_name and package_name.strip():
-        pkg_to_use = package_name.strip().lower()
+        pkg_to_use = sanitize_package_name_override(package_name)
         is_valid, pkg_err = validate_package_name(pkg_to_use)
         if not is_valid:
             raise HTTPException(

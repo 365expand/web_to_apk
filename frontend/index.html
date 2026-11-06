@@ -472,9 +472,19 @@
         if (host.startsWith("www.")) host = host.substring(4);
         const parts = host.split(".").filter(Boolean).reverse();
         if (parts.length > 0) {
-          const cleanParts = parts.map(p => p.replace(/[^a-z0-9_]/g, "")).filter(Boolean);
-          if (cleanParts[cleanParts.length - 1] !== "app") {
+          const cleanParts = parts.map(p => {
+            let clean = p.replace(/[^a-z0-9_]/g, "");
+            if (clean.length > 0 && /^[0-9]/.test(clean)) {
+              clean = "p" + clean;
+            }
+            return clean;
+          }).filter(Boolean);
+
+          if (cleanParts.length > 0 && cleanParts[cleanParts.length - 1] !== "app") {
             cleanParts.push("app");
+          }
+          if (cleanParts.length < 2 && cleanParts.length > 0) {
+            cleanParts.unshift("com");
           }
           packageNameInput.value = cleanParts.join(".");
         }
