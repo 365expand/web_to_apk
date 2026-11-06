@@ -121,31 +121,82 @@ class MainActivity : AppCompatActivity() {
         settings.mediaPlaybackRequiresUserGesture = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
+        // Restrict local file & content access to eliminate unauthorized access vulnerabilities
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
+        settings.allowFileAccessFromFileURLs = false
+        settings.allowUniversalAccessFromFileURLs = false
+
         val defaultUserAgent = settings.userAgentString
         settings.userAgentString = "$defaultUserAgent WebToAPK/1.0"
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val uri = request?.url ?: return false
-                val targetHost = uri.host?.lowercase() ?: return false
-                val baseHost = Uri.parse(BuildConfig.APP_URL).host?.lowercase() ?: ""
+                val scheme = uri.scheme?.lowercase() ?: return false
+                val targetHost = uri.host?.lowercase() ?: ""
+                val baseUri = Uri.parse(BuildConfig.APP_URL)
+                val baseHost = baseUri.host?.lowercase() ?: ""
 
-                // Check if target is on the same host or is a subdomain of the base host
+                // 1. Internal domain navigation (keep inside WebView)
                 val isInternal = targetHost == baseHost || 
                     (baseHost.isNotEmpty() && targetHost.endsWith(".$baseHost"))
 
-                if (isInternal && (uri.scheme == "http" || uri.scheme == "https")) {
+                if (isInternal && (scheme == "http" || scheme == "https")) {
                     return false
                 }
 
-                // External link or other schemes (mailto:, tel:, intent:, etc.)
-                return try {
-                    val intent = Intent(Intent.ACTION_VIEW, uri)
-                    startActivity(intent)
-                    true
-                } catch (e: Exception) {
-                    false
+                // 2. Safe external web links (open in browser with CATEGORY_BROWSABLE)
+                if (scheme == "http" || scheme == "https") {
+                    return try {
+                        val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+                            addCategory(Intent.CATEGORY_BROWSABLE)
+                        }
+                        startActivity(browserIntent)
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
                 }
+
+                // 3. Safe communication schemes
+                if (scheme in listOf("mailto", "tel", "sms", "geo")) {
+                    return try {
+                        val actionIntent = Intent(Intent.ACTION_VIEW, uri)
+                        startActivity(actionIntent)
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+
+                // 4. Intent scheme links (e.g. intent://...)
+                if (scheme == "intent") {
+                    return try {
+                        val parsedIntent = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                            component = null
+                            selector = null
+                            addCategory(Intent.CATEGORY_BROWSABLE)
+                        }
+                        if (parsedIntent.resolveActivity(packageManager) != null) {
+                            startActivity(parsedIntent)
+                            true
+                        } else {
+                            val fallbackUrl = parsedIntent.getStringExtra("browser_fallback_url")
+                            if (!fallbackUrl.isNullOrEmpty() && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
+                                view?.loadUrl(fallbackUrl)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+
+                // Block any other unknown scheme
+                return true
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -206,6 +257,9 @@ class MainActivity : AppCompatActivity() {
 
         webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
             try {
+                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                    return@setDownloadListener
+                }
                 val fileName = URLUtil.guessFileName(url, contentDisposition, mimetype)
                 val request = DownloadManager.Request(Uri.parse(url)).apply {
                     setMimeType(mimetype)

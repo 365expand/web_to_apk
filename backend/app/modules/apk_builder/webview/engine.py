@@ -105,10 +105,15 @@ class WebViewEngine(BuildEngine):
             key_alias = f"alias_{build_id[:8]}"
             key_password = generate_strong_password(24)
 
+            clean_app_name = "".join(c for c in request.app_name if c.isalnum() or c in (" ", "-", "_")).strip() or "App"
+            clean_pkg = "".join(c for c in pkg_name if c.isalnum() or c in (".", "_"))
+            dname = f"CN={clean_app_name}, OU={clean_pkg}, O={clean_app_name}, C=US"
+
             generate_keystore(
                 keystore_path=keystore_path,
                 alias=key_alias,
-                password=key_password
+                password=key_password,
+                dname=dname
             )
 
             fingerprints = get_certificate_fingerprints(
@@ -171,8 +176,12 @@ class WebViewEngine(BuildEngine):
                 # Sanitize password from logs/errors
                 clean_err = build_proc.stdout + "\n" + build_proc.stderr
                 clean_err = clean_err.replace(key_password, "********")
-                # Grab last 25 lines of output for clean diagnostics
-                tail_err = "\n".join(clean_err.strip().splitlines()[-25:])
+                if "* What went wrong:" in clean_err:
+                    parts = clean_err.split("* What went wrong:", 1)[1]
+                    summary = parts.split("==============================================================================")[0].strip()
+                    tail_err = f"* What went wrong:\n{summary}"
+                else:
+                    tail_err = "\n".join(clean_err.strip().splitlines()[-30:])
                 raise RuntimeError(f"Gradle build failed (code {build_proc.returncode}):\n{tail_err}")
 
             # 6. Locate and verify outputs
