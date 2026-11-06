@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     BLOCKLIST_PATH: Path = PROJECT_ROOT / "blocklist.txt"
 
     # Caching
-    ENABLE_BUILD_CACHE: bool = True
+    ENABLE_BUILD_CACHE: bool = False
 
     @property
     def enabled_engines_list(self) -> List[str]:
