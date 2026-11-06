@@ -85,6 +85,21 @@ class WebViewEngine(BuildEngine):
             sdk_escaped = settings.ANDROID_HOME.replace("\\", "\\\\").replace(":", "\\:")
             local_props.write_text(f"sdk.dir={sdk_escaped}\n", encoding="utf-8")
 
+            # Customize package name for MainActivity and directory structure
+            old_main_kt = workspace / "app" / "src" / "main" / "java" / "com" / "webtoapk" / "webview" / "MainActivity.kt"
+            if old_main_kt.exists():
+                content = old_main_kt.read_text(encoding="utf-8")
+                content = content.replace("package com.webtoapk.webview", f"package {pkg_name}")
+                new_pkg_dir = workspace / "app" / "src" / "main" / "java" / Path(*pkg_name.split("."))
+                new_pkg_dir.mkdir(parents=True, exist_ok=True)
+                new_main_kt = new_pkg_dir / "MainActivity.kt"
+                new_main_kt.write_text(content, encoding="utf-8")
+                old_main_kt.unlink()
+                try:
+                    shutil.rmtree(workspace / "app" / "src" / "main" / "java" / "com" / "webtoapk", ignore_errors=True)
+                except Exception:
+                    pass
+
             # 3. Process icon into template resources
             update_progress("preparing", 30)
             res_dir = workspace / "app" / "src" / "main" / "res"

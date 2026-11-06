@@ -19,7 +19,7 @@ def escapedName = propAppName.toString().replace('\\', '\\\\').replace('"', '\\"
 def cleartextAllowed = propAppUrl.toString().toLowerCase().startsWith("http://")
 
 android {
-    namespace "com.webtoapk.webview"
+    namespace propAppId
     compileSdk 34
 
     defaultConfig {
@@ -87,5 +87,9 @@ dependencies {
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.core:core-splashscreen:1.0.1'
+}
+
+configurations.all {
+    exclude group: 'androidx.profileinstaller', module: 'profileinstaller'
 }
 

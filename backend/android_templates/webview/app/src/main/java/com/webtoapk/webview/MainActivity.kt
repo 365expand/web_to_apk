@@ -2,7 +2,6 @@ package com.webtoapk.webview
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,10 +10,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.view.View
-import android.webkit.DownloadListener
-import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -111,24 +107,18 @@ class MainActivity : AppCompatActivity() {
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
-        settings.databaseEnabled = true
         settings.useWideViewPort = true
         settings.loadWithOverviewMode = true
         settings.cacheMode = WebSettings.LOAD_DEFAULT
         settings.setSupportZoom(true)
         settings.builtInZoomControls = true
         settings.displayZoomControls = false
-        settings.mediaPlaybackRequiresUserGesture = false
+        settings.mediaPlaybackRequiresUserGesture = true
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
-        // Restrict local file & content access to eliminate unauthorized access vulnerabilities
+        // Restrict local file access to prevent unauthorized access vulnerabilities
         settings.allowFileAccess = false
         settings.allowContentAccess = false
-        settings.allowFileAccessFromFileURLs = false
-        settings.allowUniversalAccessFromFileURLs = false
-
-        val defaultUserAgent = settings.userAgentString
-        settings.userAgentString = "$defaultUserAgent WebToAPK/1.0"
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
@@ -255,25 +245,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
+        webView.setDownloadListener { url, _, _, _, _ ->
             try {
-                if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                    return@setDownloadListener
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                    }
+                    startActivity(intent)
                 }
-                val fileName = URLUtil.guessFileName(url, contentDisposition, mimetype)
-                val request = DownloadManager.Request(Uri.parse(url)).apply {
-                    setMimeType(mimetype)
-                    addRequestHeader("User-Agent", userAgent)
-                    setDescription("Downloading $fileName")
-                    setTitle(fileName)
-                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-                }
-                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                dm.enqueue(request)
-                Toast.makeText(this, "Downloading file...", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                Toast.makeText(this, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Ignore if no activity can handle
             }
         }
     }
