@@ -31,3 +31,4 @@ def get_current_user(request: Request) -> User:
             return User(user_id=f"user_{token[:8]}", role="user")
 
     return User(user_id=None, role="anonymous")
+

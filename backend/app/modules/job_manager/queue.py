@@ -109,3 +109,4 @@ class JobQueue:
             "started_at": job.started_at.isoformat() if job.started_at else None,
             "completed_at": job.completed_at.isoformat() if job.completed_at else None,
         }
+

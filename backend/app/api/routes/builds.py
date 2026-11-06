@@ -151,3 +151,4 @@ def get_build_status(
             detail=f"Build '{build_id}' was not found or has expired."
         )
     return info
+

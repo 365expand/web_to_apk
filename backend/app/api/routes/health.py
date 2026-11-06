@@ -28,3 +28,4 @@ def get_health(db: Session = Depends(get_db)):
         },
         "retention_hours": settings.APK_RETENTION_HOURS
     }
+

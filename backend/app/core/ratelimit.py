@@ -73,3 +73,4 @@ def enforce_lightweight_rate_limit(request: Request, db: Session, endpoint: str 
         )
 
     return client_ip
+

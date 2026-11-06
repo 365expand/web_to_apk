@@ -17,3 +17,4 @@ class JobRecoveryManager:
         if reaped_ids:
             logger.warning(f"Recovery manager processed stuck jobs: {reaped_ids}")
         return reaped_ids
+

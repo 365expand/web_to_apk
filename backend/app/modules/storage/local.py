@@ -36,3 +36,4 @@ class LocalStorage(StorageInterface):
     def build_exists(self, build_id: str) -> bool:
         target_dir = self.base_dir / build_id
         return target_dir.exists() and target_dir.is_dir()
+

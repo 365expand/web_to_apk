@@ -145,3 +145,4 @@ def process_icon_for_android(icon_data: Union[bytes, str, Path], res_dir: Path, 
     store_icon.save(store_icon_path, format="PNG", optimize=True)
     
     return store_icon_path
+

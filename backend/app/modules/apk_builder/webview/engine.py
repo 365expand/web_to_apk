@@ -261,3 +261,4 @@ class WebViewEngine(BuildEngine):
         finally:
             # Clean up isolated workspace (always, also on failure)
             shutil.rmtree(workspace, ignore_errors=True)
+

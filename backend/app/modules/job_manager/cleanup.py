@@ -22,3 +22,4 @@ class JobCleanupManager:
             cleaned_ids.append(job.id)
 
         return cleaned_ids
+

@@ -107,3 +107,4 @@ def test_icon_processor_validation(tmp_path):
         assert (d_path / "ic_launcher.png").exists()
         assert (d_path / "ic_launcher_round.png").exists()
         assert (d_path / "ic_launcher_foreground.png").exists()
+

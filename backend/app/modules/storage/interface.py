@@ -23,3 +23,4 @@ class StorageInterface(ABC):
     def build_exists(self, build_id: str) -> bool:
         """Checks if files for a build exist."""
         pass
+

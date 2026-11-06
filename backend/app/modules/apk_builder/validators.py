@@ -131,3 +131,4 @@ def validate_version_name(version_name: Optional[str]) -> str:
     if not re.match(r"^[a-zA-Z0-9.\-_+]+$", v_clean):
         raise ValueError("Version name contains invalid characters.")
     return v_clean
+
