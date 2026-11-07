@@ -26,3 +26,13 @@ backend/storage_data/
 backend/temp_workspaces/
 .env
 
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+

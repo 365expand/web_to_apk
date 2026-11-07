@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     MAX_ICON_SIZE_MB: int = 5
     BLOCKLIST_PATH: Path = PROJECT_ROOT / "blocklist.txt"
 
+    # Queue & Redis
+    REDIS_URL: Optional[str] = None
+    QUEUE_BACKEND: str = "auto"  # "auto", "redis", or "sqlite"
+
     # Caching
     ENABLE_BUILD_CACHE: bool = False
 

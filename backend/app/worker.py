@@ -120,7 +120,12 @@ class Worker:
             stop_heartbeat.set()
             db.close()
             with self.lock:
-                self.active_jobs -= 1
+                self.active_jobs = max(0, self.active_jobs - 1)
+            try:
+                from app.modules.job_manager.redis_queue import RedisJobQueue
+                RedisJobQueue.remove_processing_job(job_id)
+            except Exception:
+                pass
 
     def start(self):
         self.running = True
@@ -153,10 +158,16 @@ class Worker:
                     can_claim = self.active_jobs < settings.MAX_CONCURRENT_BUILDS
 
                 if can_claim:
+                    # Check Redis queue first if active, otherwise claim next DB job
+                    from app.modules.job_manager.redis_queue import RedisJobQueue
+                    redis_job_id = RedisJobQueue.pop_job(timeout=0)
                     db = SessionLocal()
                     claimed_job = None
                     try:
-                        claimed_job = BuildRepository.claim_next_job(db, self.worker_id)
+                        if redis_job_id:
+                            claimed_job = BuildRepository.claim_specific_job(db, redis_job_id, self.worker_id)
+                        if not claimed_job:
+                            claimed_job = BuildRepository.claim_next_job(db, self.worker_id)
                     finally:
                         db.close()
 

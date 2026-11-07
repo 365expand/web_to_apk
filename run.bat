@@ -1,13 +1,13 @@
 @echo off
-title WebToAPK Builder - Auto Setup ^& Runner
+title WebToNative Studio - All-in-One Local Runner
 
 echo ======================================================================
-echo           WebToAPK Builder V1 - Setup ^& Startup Launcher
+echo           WebToNative Studio - Setup ^& Full-Stack Launcher
 echo ======================================================================
 echo.
 
 :: 1. Check Python
-echo [1/5] Checking Python installation...
+echo [1/6] Checking Python installation...
 where python >nul 2>nul
 if %errorlevel% neq 0 (
     echo [ERROR] Python is not installed or not in your PATH.
@@ -16,9 +16,26 @@ if %errorlevel% neq 0 (
 )
 for /f "tokens=*" %%v in ('python --version') do echo [OK] Found: %%v
 
-:: 2. Check Java JDK
+:: 2. Check Node.js & npm (for Next.js Frontend)
 echo.
-echo [2/5] Checking Java JDK 17...
+echo [2/6] Checking Node.js ^& npm for Next.js frontend...
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not installed or not in your PATH.
+    echo Please install Node.js 18+ from https://nodejs.org/ to run the Next.js frontend.
+    goto :error
+)
+where npm >nul 2>nul
+if %errorlevel% neq 0 (
+    echo [ERROR] npm is not found.
+    goto :error
+)
+for /f "tokens=*" %%v in ('node -v') do echo [OK] Node.js: %%v
+for /f "tokens=*" %%v in ('npm -v') do echo [OK] npm: %%v
+
+:: 3. Check Java JDK
+echo.
+echo [3/6] Checking Java JDK 17...
 where java >nul 2>nul
 if %errorlevel% neq 0 (
     if exist "C:\Program Files\Java\jdk-17\bin\java.exe" (
@@ -33,9 +50,9 @@ if %errorlevel% neq 0 (
     echo [OK] Java is available in PATH.
 )
 
-:: 3. Check Android SDK
+:: 4. Check Android SDK
 echo.
-echo [3/5] Checking Android SDK...
+echo [4/6] Checking Android SDK...
 if "%ANDROID_HOME%"=="" (
     if exist "C:\Android" (
         set "ANDROID_HOME=C:\Android"
@@ -50,9 +67,9 @@ if "%ANDROID_HOME%"=="" (
     echo [OK] ANDROID_HOME is %ANDROID_HOME%
 )
 
-:: 4. Check & Prepare Virtual Environment and Dependencies
+:: 5. Check & Prepare Backend Dependencies
 echo.
-echo [4/5] Checking Python Virtual Environment and Dependencies...
+echo [5/6] Checking Backend Python environment...
 cd /d "%~dp0backend"
 if %errorlevel% neq 0 (
     echo [ERROR] Could not navigate to backend directory: %~dp0backend
@@ -69,41 +86,66 @@ if not exist "venv\Scripts\python.exe" (
     echo [OK] Virtual environment created.
 )
 
-echo [*] Verifying installed packages...
-venv\Scripts\python.exe -c "import fastapi, uvicorn, sqlalchemy, PIL, pydantic_settings" >nul 2>nul
+echo [*] Verifying backend installed packages...
+venv\Scripts\python.exe -c "import fastapi, uvicorn, sqlalchemy, PIL, pydantic_settings, redis" >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [*] Installing required packages from requirements.txt...
+    echo [*] Installing required backend packages...
     venv\Scripts\pip.exe install -r requirements.txt
     if %errorlevel% neq 0 (
         echo [ERROR] Failed to install packages from requirements.txt
         goto :error
     )
-    echo [OK] Packages installed successfully.
+    echo [OK] Backend packages installed successfully.
 ) else (
-    echo [OK] All required packages are already installed.
+    echo [OK] Backend packages ready.
 )
 
-:: 5. Launch Background Worker and API Server
+:: 6. Check & Prepare Frontend (Next.js)
 echo.
-echo [5/5] Launching WebToAPK services...
+echo [6/6] Checking Next.js Frontend dependencies...
+cd /d "%~dp0frontend"
+if not exist "node_modules" (
+    echo [*] Installing frontend npm packages (first time setup)...
+    call npm install
+    if %errorlevel% neq 0 (
+        echo [ERROR] npm install failed in frontend.
+        goto :error
+    )
+    echo [OK] Frontend packages installed.
+) else (
+    echo [OK] Frontend packages ready.
+)
+
+:: Launch All Services
+echo.
+echo ======================================================================
+echo  Launching WebToNative Full-Stack:
+echo   1. Background Build Worker (Process #1)
+echo   2. Next.js Frontend on http://localhost:3000 (Process #2)
+echo   3. FastAPI API Server on http://127.0.0.1:8000 (Current Window)
+echo ======================================================================
+echo.
+
 set "PYTHONPATH=%~dp0backend"
 
-echo [*] Starting Build Worker process in separate window...
-start "WebToAPK - Build Worker" cmd /k "title WebToAPK - Build Worker && cd /d %~dp0backend && set PYTHONPATH=%~dp0backend && venv\Scripts\python.exe -m app.worker"
+echo [*] Starting Build Worker process...
+start "WebToNative - Build Worker" cmd /k "title WebToNative - Build Worker && cd /d %~dp0backend && set PYTHONPATH=%~dp0backend && venv\Scripts\python.exe -m app.worker"
+
+echo [*] Starting Next.js Frontend server...
+start "WebToNative - Next.js Frontend" cmd /k "title WebToNative - Next.js Frontend && cd /d %~dp0frontend && npm run dev"
 
 echo [*] Waiting for services to initialize...
-ping 127.0.0.1 -n 3 >nul
+ping 127.0.0.1 -n 4 >nul
 
-echo [*] Opening Web UI in your default browser...
-start http://localhost:8000
+echo [*] Opening WebToNative UI in default browser...
+start http://localhost:3000
 
 echo.
-echo ======================================================================
-echo  API Server is running on: http://127.0.0.1:8000
-echo  Press CTRL+C in this window at any time to stop the server.
-echo ======================================================================
+echo [OK] FastAPI API Server starting in this window...
+echo Press CTRL+C at any time to stop the API server.
 echo.
 
+cd /d "%~dp0backend"
 venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 goto :end
@@ -111,7 +153,7 @@ goto :end
 :error
 echo.
 echo ======================================================================
-echo  Startup failed. See the error messages above.
+echo  Startup failed. See error messages above.
 echo ======================================================================
 pause
 exit /b 1

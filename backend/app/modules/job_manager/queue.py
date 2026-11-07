@@ -78,6 +78,14 @@ class JobQueue:
             user_id=user_id,
             ip_address=ip_address
         )
+
+        # Notify Redis queue if available
+        try:
+            from app.modules.job_manager.redis_queue import RedisJobQueue
+            RedisJobQueue.push_job(job_id)
+        except Exception:
+            pass
+
         return job, False
 
     @staticmethod

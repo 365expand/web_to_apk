@@ -88,6 +88,37 @@ class BuildRepository:
         return db.query(BuildJob).filter(BuildJob.status == "processing").count()
 
     @staticmethod
+    def claim_specific_job(db: Session, job_id: str, worker_id: str) -> Optional[BuildJob]:
+        """Claims a specific job ID (used when Redis pops a job)."""
+        try:
+            if db.bind and db.bind.dialect.name == "sqlite":
+                db.execute(text("BEGIN IMMEDIATE"))
+
+            candidate = (
+                db.query(BuildJob)
+                .filter(BuildJob.id == job_id, BuildJob.status == "queued")
+                .first()
+            )
+            if not candidate:
+                db.commit()
+                return None
+
+            now = utc_now()
+            candidate.status = "processing"
+            candidate.step = "preparing"
+            candidate.progress = 15
+            candidate.worker_id = worker_id
+            candidate.started_at = now
+            candidate.heartbeat_at = now
+
+            db.commit()
+            db.refresh(candidate)
+            return candidate
+        except Exception:
+            db.rollback()
+            raise
+
+    @staticmethod
     def claim_next_job(db: Session, worker_id: str) -> Optional[BuildJob]:
         """
         Atomically claims the oldest queued job using BEGIN IMMEDIATE in SQLite.

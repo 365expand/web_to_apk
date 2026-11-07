@@ -1,6 +1,14 @@
 version: '3.8'
 
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
   api:
     build:
       context: .
@@ -10,6 +18,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:////app/backend/data/webtoapk.db
+      - REDIS_URL=redis://redis:6379/0
       - ANDROID_HOME=/opt/android-sdk
       - MAX_CONCURRENT_BUILDS=2
       - APK_RETENTION_HOURS=24
@@ -19,6 +28,8 @@ services:
       - app-data:/app/backend/data
       - app-storage:/app/backend/storage_data
     restart: unless-stopped
+    depends_on:
+      - redis
 
   worker:
     build:
@@ -27,6 +38,7 @@ services:
     command: python -m app.worker
     environment:
       - DATABASE_URL=sqlite:////app/backend/data/webtoapk.db
+      - REDIS_URL=redis://redis:6379/0
       - ANDROID_HOME=/opt/android-sdk
       - MAX_CONCURRENT_BUILDS=2
       - APK_RETENTION_HOURS=24
@@ -37,7 +49,9 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+      - redis
 
 volumes:
   app-data:
   app-storage:
+  redis-data:
