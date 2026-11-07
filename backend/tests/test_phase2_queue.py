@@ -71,7 +71,9 @@ def test_atomic_claim_no_double_claim():
         pass
 
 
-def test_job_enqueue_and_reuse():
+def test_job_enqueue_and_reuse(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "ENABLE_BUILD_CACHE", True)
     db = get_test_db()
     icon_bytes = b"fake-png-bytes-12345"
 
