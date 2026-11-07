@@ -105,9 +105,9 @@ echo.
 echo [6/6] Checking Next.js Frontend dependencies...
 cd /d "%~dp0frontend"
 if not exist "node_modules" (
-    echo [*] Installing frontend npm packages (first time setup)...
+    echo [*] Installing frontend npm packages - please wait...
     call npm install
-    if %errorlevel% neq 0 (
+    if errorlevel 1 (
         echo [ERROR] npm install failed in frontend.
         goto :error
     )
@@ -120,9 +120,9 @@ if not exist "node_modules" (
 echo.
 echo ======================================================================
 echo  Launching WebToNative Full-Stack:
-echo   1. Background Build Worker (Process #1)
-echo   2. Next.js Frontend on http://localhost:3000 (Process #2)
-echo   3. FastAPI API Server on http://127.0.0.1:8000 (Current Window)
+echo   1. Background Build Worker Process
+echo   2. Next.js Frontend on http://localhost:3000
+echo   3. FastAPI API Server on http://127.0.0.1:8000
 echo ======================================================================
 echo.
 
