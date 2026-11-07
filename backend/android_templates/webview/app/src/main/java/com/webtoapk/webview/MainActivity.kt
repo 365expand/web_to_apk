@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -102,8 +103,92 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun normalizeHost(host: String?): String {
+        if (host.isNullOrEmpty()) return ""
+        val h = host.lowercase().trim()
+        return if (h.startsWith("www.")) h.substring(4) else h
+    }
+
+    private fun handleUrlLoading(view: WebView?, uri: Uri): Boolean {
+        val scheme = uri.scheme?.lowercase() ?: return false
+
+        // Relative URLs, javascript:, about: schemes must stay in WebView
+        if (scheme == "javascript" || scheme == "about" || scheme == "data") {
+            return false
+        }
+
+        val targetHost = normalizeHost(uri.host)
+        val baseHost = normalizeHost(Uri.parse(BuildConfig.APP_URL).host)
+
+        // Internal domain navigation (subdomains, www/non-www, relative paths) stay inside WebView
+        val isInternal = targetHost.isEmpty() ||
+            targetHost == baseHost || 
+            (baseHost.isNotEmpty() && targetHost.endsWith(".$baseHost")) ||
+            (targetHost.isNotEmpty() && baseHost.endsWith(".$targetHost"))
+
+        if (isInternal && (scheme == "http" || scheme == "https")) {
+            return false // Load seamlessly inside WebView
+        }
+
+        // Safe external web links (open in system browser with CATEGORY_BROWSABLE)
+        if (scheme == "http" || scheme == "https") {
+            return try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                }
+                startActivity(browserIntent)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        // Safe communication schemes (mailto, tel, sms, geo, whatsapp)
+        if (scheme in listOf("mailto", "tel", "sms", "geo", "whatsapp")) {
+            return try {
+                val actionIntent = Intent(Intent.ACTION_VIEW, uri)
+                startActivity(actionIntent)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        // Intent scheme links (e.g. intent://...)
+        if (scheme == "intent") {
+            return try {
+                val parsedIntent = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                    component = null
+                    selector = null
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                }
+                if (parsedIntent.resolveActivity(packageManager) != null) {
+                    startActivity(parsedIntent)
+                    true
+                } else {
+                    val fallbackUrl = parsedIntent.getStringExtra("browser_fallback_url")
+                    if (!fallbackUrl.isNullOrEmpty() && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
+                        view?.loadUrl(fallbackUrl)
+                        true
+                    } else {
+                        false
+                    }
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        // Block any other unknown scheme
+        return true
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
+        val cookieManager = CookieManager.getInstance()
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(webView, true)
+
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
@@ -116,6 +201,10 @@ class MainActivity : AppCompatActivity() {
         settings.mediaPlaybackRequiresUserGesture = true
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
+        // Allow target="_blank" and window.open to change pages within the current WebView
+        settings.javaScriptCanOpenWindowsAutomatically = true
+        settings.setSupportMultipleWindows(false)
+
         // Restrict local file access to prevent unauthorized access vulnerabilities
         settings.allowFileAccess = false
         settings.allowContentAccess = false
@@ -123,70 +212,13 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val uri = request?.url ?: return false
-                val scheme = uri.scheme?.lowercase() ?: return false
-                val targetHost = uri.host?.lowercase() ?: ""
-                val baseUri = Uri.parse(BuildConfig.APP_URL)
-                val baseHost = baseUri.host?.lowercase() ?: ""
+                return handleUrlLoading(view, uri)
+            }
 
-                // 1. Internal domain navigation (keep inside WebView)
-                val isInternal = targetHost == baseHost || 
-                    (baseHost.isNotEmpty() && targetHost.endsWith(".$baseHost"))
-
-                if (isInternal && (scheme == "http" || scheme == "https")) {
-                    return false
-                }
-
-                // 2. Safe external web links (open in browser with CATEGORY_BROWSABLE)
-                if (scheme == "http" || scheme == "https") {
-                    return try {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-                            addCategory(Intent.CATEGORY_BROWSABLE)
-                        }
-                        startActivity(browserIntent)
-                        true
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                // 3. Safe communication schemes
-                if (scheme in listOf("mailto", "tel", "sms", "geo")) {
-                    return try {
-                        val actionIntent = Intent(Intent.ACTION_VIEW, uri)
-                        startActivity(actionIntent)
-                        true
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                // 4. Intent scheme links (e.g. intent://...)
-                if (scheme == "intent") {
-                    return try {
-                        val parsedIntent = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
-                            component = null
-                            selector = null
-                            addCategory(Intent.CATEGORY_BROWSABLE)
-                        }
-                        if (parsedIntent.resolveActivity(packageManager) != null) {
-                            startActivity(parsedIntent)
-                            true
-                        } else {
-                            val fallbackUrl = parsedIntent.getStringExtra("browser_fallback_url")
-                            if (!fallbackUrl.isNullOrEmpty() && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
-                                view?.loadUrl(fallbackUrl)
-                                true
-                            } else {
-                                false
-                            }
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                // Block any other unknown scheme
-                return true
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                if (url.isNullOrEmpty()) return false
+                return handleUrlLoading(view, Uri.parse(url))
             }
 
             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -198,6 +230,7 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 progressBar.visibility = View.GONE
                 swipeRefreshLayout.isRefreshing = false
+                CookieManager.getInstance().flush()
             }
 
             override fun onReceivedError(
@@ -213,6 +246,22 @@ class MainActivity : AppCompatActivity() {
         }
 
         webView.webChromeClient = object : WebChromeClient() {
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: android.os.Message?
+            ): Boolean {
+                val hrefMsg = view?.handler?.obtainMessage()
+                view?.requestFocusNodeHref(hrefMsg)
+                val targetUrl = hrefMsg?.data?.getString("url")
+                if (!targetUrl.isNullOrEmpty()) {
+                    view.loadUrl(targetUrl)
+                    return true
+                }
+                return false
+            }
+
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 if (newProgress < 100) {
                     progressBar.visibility = View.VISIBLE
