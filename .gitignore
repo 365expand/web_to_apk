@@ -9,6 +9,15 @@ venv/
 .venv/
 .pytest_cache/
 
+# Databases & Cache
+*.db
+*.db-wal
+*.db-shm
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm
+backend/webtoapk.db
+
 # Android / Gradle
 .gradle/
 build/
@@ -18,10 +27,7 @@ build/
 *.jks
 local.properties
 
-# Application data & workspaces
-backend/data/*.db
-backend/data/*.db-wal
-backend/data/*.db-shm
+# Application storage & workspaces
 backend/storage_data/
 backend/temp_workspaces/
 .env
@@ -35,4 +41,13 @@ node_modules/
 *.tsbuildinfo
 next-env.d.ts
 
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
 
+# OS / Misc
+.DS_Store
+Thumbs.db
+*.log
